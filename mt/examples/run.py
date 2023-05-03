@@ -29,6 +29,7 @@ def main() -> None:
     torch.autograd.set_detect_anomaly(True)
     parser = argparse.ArgumentParser(description="M-VAE runner.")
     parser.add_argument("--device", type=str, default="cuda", help="Whether to use cuda or cpu.")
+    parser.add_argument("--tb-dir", type=str, default="./chkpt", help="Tensorboard directory")
     parser.add_argument("--data", type=str, default="./data", help="Data directory.")
     parser.add_argument("--batch_size", type=int, default=100, help="Batch size.")
     parser.add_argument("--learning_rate", type=float, default=1e-3, help="Learning rate.")
@@ -79,6 +80,7 @@ def main() -> None:
     parser.add_argument("--beta_start", type=float, default=1.0, help="Beta-VAE beginning value.")
     parser.add_argument("--beta_end", type=float, default=1.0, help="Beta-VAE end value.")
     parser.add_argument("--beta_end_epoch", type=int, default=1, help="Beta-VAE end epoch (0 to epochs-1).")
+    parser.add_argument("--curv_learn_delay", type=int, default=1, help="Delay in learning curvature parameters")
     parser.add_argument("--likelihood_n",
                         type=int,
                         default=500,
@@ -109,8 +111,8 @@ def main() -> None:
     print(f"VAE Model: {model_name}; Epochs: {args.epochs}; Time: {cur_time}; Fixed curvature: {args.fixed_curvature}; "
           f"Dataset: {args.dataset}")
     print("#####", flush=True)
-    chkpt_dir = f"./chkpt/vae-{args.dataset}-{model_name}-{cur_time}"
-    os.makedirs(chkpt_dir)
+    chkpt_dir = args.tb_dir
+    os.makedirs(chkpt_dir, exist_ok=True)
 
     if args.architecture == "ff":
         model_cls = FeedForwardVAE
@@ -133,7 +135,7 @@ def main() -> None:
                       show_embeddings=args.show_embeddings,
                       export_embeddings=args.export_embeddings,
                       test_every=args.test_every)
-    optimizer = trainer.build_optimizer(learning_rate=args.learning_rate, fixed_curvature=args.fixed_curvature)
+    optimizer = trainer.build_optimizer(learning_rate=args.learning_rate, fixed_curvature=args.fixed_curvature, curv_learn_delay=args.curv_learn_delay)
     train_loader, test_loader = dataset.create_loaders()
     betas = utils.linear_betas(args.beta_start, args.beta_end, end_epoch=args.beta_end_epoch, epochs=args.epochs)
 

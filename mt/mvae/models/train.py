@@ -324,7 +324,7 @@ class Trainer:
             embeddings_cat = torch.cat(embeddings[i], dim=0)
             torch.save(embeddings_cat, _filename(component.summary_name(i)))
 
-    def build_optimizer(self, learning_rate: float, fixed_curvature: bool) -> torch.optim.Optimizer:
+    def build_optimizer(self, learning_rate: float, fixed_curvature: bool, curv_learn_delay:int = 1) -> torch.optim.Optimizer:
 
         def ncurvature_param_cond(key: str) -> bool:
             return "nradius" in key or "curvature" in key
@@ -355,6 +355,6 @@ class Trainer:
             c_opt_neg = torch.optim.SGD(neg_curv_params, lr=1e-4)
 
         def condition() -> bool:
-            return (not fixed_curvature) and (self.epoch >= 10) and (self.stats.global_step % 1 == 0)
+            return (not fixed_curvature) and (self.epoch >= 10) and (self.stats.global_step % curv_learn_delay == 0)
 
         return CurvatureOptimizer(net_optimizer, neg=c_opt_neg, pos=c_opt_pos, should_do_curvature_step=condition)
